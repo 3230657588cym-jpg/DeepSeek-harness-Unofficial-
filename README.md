@@ -3,114 +3,118 @@
 > **⚠️ DISCLAIMER — Not an official DeepSeek product**
 >
 > This is an **unofficial, community-built desktop wrapper** for the DeepSeek Harness web interface.
-> It is **not affiliated with, endorsed by, or produced by DeepSeek** (DeepSeek AI / 深度求索).
+> It is **not affiliated with, endorsed by, or produced by DeepSeek** (DeepSeek AI).
 >
 > The official DeepSeek Harness is available at: **https://www.deepseek.com/harness/**
 >
 > "DeepSeek" and related names/trademarks belong to their respective owners. This project only wraps
 > the published `@deepseek-ai/dsh` npm package and adds no DeepSeek code or branding beyond the package name.
 
-把现有的 **DeepSeek Harness Web 版**（`dsh web`）封装成一个真正可独立运行的 macOS 原生应用：
+This project packages the existing **DeepSeek Harness web interface** (`dsh web`) into a standalone
+macOS desktop app:
 
-- 双击 App 即可启动，无需手动开浏览器、无需手动起 Server
-- 无需用户安装 Node.js / Python / Bun / Electron 等任何运行环境
-- 保留现有 Harness Runtime 与 Web UI 的全部功能
-- 退出 App 时自动关闭后端及所有子进程，无残留
+- Double-click to launch — no browser, no manual server startup
+- No Node.js / Python / Bun / Electron runtime required on the target machine
+- The full Harness Runtime and Web UI are preserved
+- Closing the app shuts down the backend and all child processes — nothing left behind
 
-## 架构
+## Architecture
 
-采用 **Electron 外壳 + 内置 dsh 后端** 方案，不重写、不改动现有 Harness。
+An **Electron shell around the built-in dsh backend** — the existing Harness is reused, not rewritten.
 
 ```
 DeepSeek Harness.app
-├── Electron 主进程 (main.js)
-│     ├── 启动内置的 Harness Runtime（用 Electron 自带 Node 作为子进程）
-│     ├── 等待本地 Server Ready（解析 dsh web 打印的 URL）
-│     ├── 打开原生窗口加载现有 Web UI
-│     └── 退出时终止整个后端进程树
-├── Harness Runtime（@deepseek-ai/dsh）
+├── Electron main process (main.js)
+│     ├── Spawns the bundled Harness Runtime (Electron's own Node as a child process)
+│     ├── Waits for the local server to be ready (parses the URL printed by `dsh web`)
+│     ├── Opens a native window loading the existing Web UI
+│     └── Terminates the whole backend process tree on quit
+├── Harness Runtime (@deepseek-ai/dsh)
 │     ├── Agent / LLM / Tools
-│     ├── Shell / Terminal（node-pty）
+│     ├── Shell / Terminal (node-pty)
 │     ├── File System
 │     ├── MCP
-│     └── 本地 API Server（node:http，127.0.0.1）
-└── Renderer（现有 React Web UI）
+│     └── Local API server (node:http, 127.0.0.1)
+└── Renderer (existing React Web UI)
 ```
 
-关键点：
+Key points:
 
-- **后端以子进程方式运行**：用 `ELECTRON_RUN_AS_NODE=1` 复用 Electron 自带的 Node，
-  因此最终用户**不需要**装 Node.js。
-- **`asar: false`**：dsh 后端以纯 Node 子进程运行，无法读取 asar 归档；且后端含
-  N-API 原生模块（node-pty / sharp / koffi），全部解包最稳妥。
-- **端口自动分配**：`--port 0` 让系统随机选端口，避免与其它程序冲突。
-- **数据持久化**：沿用 Web 版同一数据目录 `~/.dsh`（会话、设置、凭据、历史都在这里），
-  桌面版与 `dsh web` 共享数据，不会写入临时目录。可用 `DSH_HOME` 环境变量覆盖。
+- **Backend runs as a child process**: `ELECTRON_RUN_AS_NODE=1` reuses Electron's bundled Node,
+  so end users do **not** need Node.js installed.
+- **`asar: false`**: the dsh backend runs as a plain Node child process and cannot read an asar
+  archive; it also ships N-API native modules (node-pty / sharp / koffi), so keeping everything
+  unpacked is the safest option.
+- **Automatic port selection**: `--port 0` lets the OS pick a free port, avoiding conflicts.
+- **Data persistence**: reuses the same `~/.dsh` directory as the web version (sessions, settings,
+  credentials, history), shared with `dsh web` and never written to a temp directory. Override with
+  the `DSH_HOME` environment variable.
 
-## 开发模式
+## Development
 
 ```bash
 npm install
-npm run dev        # 启动 Electron + 内置 dsh 后端（带日志）
-npm start          # 同 dev，但不带 dev 日志
-npm run smoke      # 无界面自检：起后端→校验 UI→加载窗口→干净退出
+npm run dev        # Launch Electron + the bundled dsh backend (with logs)
+npm start          # Same as dev, without dev logs
+npm run smoke      # Headless self-check: start backend → verify UI → load window → clean exit
 ```
 
-开发模式下，日志输出到终端；运行日志同时写入
-`~/Library/Logs/DeepSeek Harness/dsh-backend.log`。
+Logs go to the terminal in dev mode; runtime logs are also written to
+`~/Library/Logs/DeepSeek Harness/dsh-backend.log`.
 
-## 构建生产版
+## Building
 
 ```bash
-npm run dist:dir   # 只产出 .app（不打包 dmg，用于快速验证）
-npm run dist       # 产出 .app + .dmg + .zip
-npm run pack       # 同 dist（dmg + zip）
+npm run dist:dir   # Produce the .app only (no dmg, for quick verification)
+npm run dist       # Produce .app + .dmg + .zip
+npm run pack       # Same as dist (dmg + zip)
 ```
 
-产物在 `release/` 目录：
+Artifacts are written to `release/`:
 
-- `release/mac-arm64/DeepSeek Harness.app` — 可双击运行的 App
-- `release/DeepSeek Harness-0.1.0-arm64.dmg` — 安装镜像（拖入“应用程序”）
-- `release/DeepSeek Harness-0.1.0-arm64.zip` — 免安装压缩版
+- `release/mac-arm64/DeepSeek Harness.app` — the double-clickable app
+- `release/DeepSeek Harness-0.1.0-arm64.dmg` — installer image (drag into Applications)
+- `release/DeepSeek Harness-0.1.0-arm64.zip` — portable zip
 
-当前仅构建 **Apple Silicon (arm64)**。如需支持 Intel Mac，把
-`electron-builder.yml` 中 `mac.target` 的 `arch` 改为 `[arm64, x64]` 或 `[universal]`。
+Only **Apple Silicon (arm64)** is built by default. For Intel Macs, change `arch` under
+`mac.target` in `electron-builder.yml` to `[arm64, x64]` or `[universal]`.
 
-## 打包后的自检
+## Smoke test
 
 ```bash
 ./release/mac-arm64/DeepSeek\ Harness.app/Contents/MacOS/DeepSeek\ Harness --smoke
 ```
 
-看到 `SMOKE_OK` 且退出码为 0 即为通过。
+`SMOKE_OK` with exit code 0 means it passed.
 
-## 签名与“已损坏”问题（重要）
+## Code signing & the "damaged app" issue
 
-构建产物使用 **ad-hoc 签名**（本机可运行，但无公证）。
+The build is **ad-hoc signed** (runs locally, but not notarized).
 
-- **为什么会报“已损坏，无法打开”**：两种原因叠加——
-  1. App 未被正确签名（残缺签名链）；
-  2. 文件带上了 `com.apple.quarantine`/`FinderInfo` 等属性（比如经 QQ/微信/网盘
-     传输，或存放在 iCloud 同步的 `Documents` 目录里被反复加属性）。
+- **Why "damaged, cannot be opened" appears** — two causes combined:
+  1. the app was not properly signed (broken signature chain);
+  2. the files carry `com.apple.quarantine` / `FinderInfo` attributes (e.g. transferred via
+     QQ/WeChat/cloud drives, or stored in the iCloud-synced `Documents` folder, which keeps
+     re-attaching attributes).
 
-  本项目已从两方面根治：`electron-builder.yml` 设置 `identity: "-"`（ad-hoc
-  签名），并把构建输出放到 iCloud 范围外的 `/tmp/dsh-release`（构建后自动复制回
-  `release/`）。
+  This project fixes both at the source: `electron-builder.yml` sets `identity: "-"` (ad-hoc
+  signing), and the build output goes to `/tmp/dsh-release` (outside iCloud sync), then is copied
+  back to `release/` automatically.
 
-- **推荐用法：用 dmg 安装**。双击 `.dmg` → 把 App 拖进「应用程序」→ 从「应用程序」
-  打开（`/Applications` 不在 iCloud 同步范围，签名不会被打扰）。
+- **Recommended: install via the dmg**. Open the `.dmg` → drag the app into Applications → launch
+  it from Applications (`/Applications` is not iCloud-synced, so the signature is left alone).
 
-- **如果直接双击 `.app` 仍报“已损坏”**，先清除文件属性再打开：
+- **If double-clicking the `.app` still shows "damaged"**, clear the file attributes first:
 
   ```bash
   xattr -cr "/Users/steve/Documents/harness app/release/mac-arm64/DeepSeek Harness.app"
   ```
 
-分发到**其它 Mac** 前需要 Apple Developer ID 签名 + 公证，否则对方首次打开会被
-Gatekeeper 拦截（需要右键 → 打开，或到「系统设置 → 隐私与安全性」放行）。
+Distributing to **other Macs** requires Apple Developer ID signing + notarization; otherwise the
+first launch is blocked by Gatekeeper (right-click → Open, or System Settings → Privacy & Security).
 
 ```bash
-# 用你的 Developer ID 构建并公证
+# Build and notarize with your Developer ID
 CSC_LINK=/path/to/cert.p12 \
 CSC_KEY_PASSWORD=xxx \
 APPLE_ID=you@example.com \
@@ -119,14 +123,14 @@ APPLE_TEAM_ID=XXXXXXXXXX \
 npm run dist
 ```
 
-## 数据 / 配置
+## Data & configuration
 
-- Harness 数据与 Web 版一致，位于 `~/.dsh`（`DSH_HOME` 可覆盖）。
-- DeepSeek API Key 通过 `.env`（`~/.dsh/.env` 或工作目录 `.env`）或环境变量
-  `DEEPSEEK_API_KEY` 配置，**不会硬编码进 App**。
+- Harness data lives in `~/.dsh`, same as the web version (`DSH_HOME` can override).
+- The DeepSeek API key is provided via `.env` (`~/.dsh/.env` or a project `.env`) or the
+  `DEEPSEEK_API_KEY` environment variable — it is **never hardcoded** into the app.
 
-## 已知限制
+## Known limitations
 
-- 未签名/未公证：分发到其它 Mac 需要自行签名公证（见上）。
-- 仅 arm64：Intel Mac 需按上文改 arch 重新构建。
-- 应用图标暂用 Electron 默认图标，可后续替换（放入 `build/icon.icns`）。
+- Unsigned / not notarized: distributing to other Macs requires your own signing + notarization.
+- arm64 only: Intel Macs require rebuilding with a different `arch` (see above).
+- The app uses the default Electron icon for now; replace it by adding `build/icon.icns`.

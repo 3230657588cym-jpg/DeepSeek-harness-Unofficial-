@@ -25,11 +25,11 @@ d = ImageDraw.Draw(img)
 title = "DeepSeek Harness"
 d.text((center_x(d, title, load(36)), 30), title, font=load(36), fill=DARK)
 
-# Chinese subtitle: drag-to-install hint
-sub = "把 App 图标拖到右侧 Applications 文件夹完成安装"
+# Subtitle: drag-to-install hint
+sub = "Drag the App icon into the Applications folder to install"
 d.text((center_x(d, sub, load(15)), 74), sub, font=load(15), fill=GRAY)
 
-# English disclaimer (unofficial + official link)
+# Disclaimer (unofficial + official link)
 disc = "Unofficial community build — not affiliated with DeepSeek · https://www.deepseek.com/harness/"
 d.text((center_x(d, disc, load(11)), 96), disc, font=load(11), fill=FAINT)
 
@@ -37,14 +37,14 @@ d.text((center_x(d, disc, load(11)), 96), disc, font=load(11), fill=FAINT)
 d.line([(64, 250), (W - 64, 250)], fill=LINE, width=1)
 
 # Notes
-lead = "如首次打开被系统拦截，请按以下方式操作："
+lead = "If the app is blocked on first launch:"
 d.text((64, 258), lead, font=load(15), fill=DARK)
 
 notes = [
-    "2. 系统设置 → 隐私与安全性（最正规的入口）",
-    "    先双击 App 被拦截一次后，打开「系统设置 → 隐私与安全性」，",
-    "    往下滚到「安全性」区，会出现一个「仍要打开」按钮，",
-    "    点一下并输入密码即可。",
+    "2. System Settings → Privacy & Security (the official way)",
+    "    After the app is blocked once, open System Settings →",
+    "    Privacy & Security, scroll to the Security section and",
+    '    click "Open Anyway", then enter your password.',
 ]
 y = 286
 for line in notes:
