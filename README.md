@@ -1,4 +1,14 @@
-# DeepSeek Harness — macOS 桌面应用
+# DeepSeek Harness — macOS Desktop App
+
+> **⚠️ DISCLAIMER — Not an official DeepSeek product**
+>
+> This is an **unofficial, community-built desktop wrapper** for the DeepSeek Harness web interface.
+> It is **not affiliated with, endorsed by, or produced by DeepSeek** (DeepSeek AI / 深度求索).
+>
+> The official DeepSeek Harness is available at: **https://www.deepseek.com/harness/**
+>
+> "DeepSeek" and related names/trademarks belong to their respective owners. This project only wraps
+> the published `@deepseek-ai/dsh` npm package and adds no DeepSeek code or branding beyond the package name.
 
 把现有的 **DeepSeek Harness Web 版**（`dsh web`）封装成一个真正可独立运行的 macOS 原生应用：
 
