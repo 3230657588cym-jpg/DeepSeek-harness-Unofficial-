@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Build output (installers, .app, .dmg, .zip)
+release/
+dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# macOS
+.DS_Store
+.AppleDouble
+
+# Local environment / secrets (never commit)
+.env
+.env.*
+!.env.example
+
+# Editor
+.vscode/
+.idea/

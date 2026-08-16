@@ -1,0 +1,64 @@
+appId: ai.deepseek.harness.desktop
+productName: DeepSeek Harness
+
+# The Electron main process spawns the dsh runtime with ELECTRON_RUN_AS_NODE.
+# A plain Node child cannot read from an asar archive, and the runtime ships
+# N-API native modules (node-pty, sharp, koffi), so keep everything unpacked.
+asar: false
+
+# All native modules are N-API prebuilds (ABI-stable); no rebuild needed.
+npmRebuild: false
+
+directories:
+  # Build OUTSIDE the iCloud-synced Documents folder: iCloud's file provider
+  # keeps re-attaching com.apple.FinderInfo / com.apple.provenance xattrs that
+  # break code signing ("resource fork, Finder information... not allowed").
+  output: /tmp/dsh-release
+  buildResources: build
+
+files:
+  - main.js
+  - package.json
+  - "node_modules/**/*"
+  - "!node_modules/.cache/**"
+  - "!node_modules/.bin/**"
+  - "!**/*.map"
+  - "!**/*.d.ts"
+
+mac:
+  category: public.app-category.developer-tools
+  # Ad-hoc sign the whole bundle (identity "-"). Without a Developer ID,
+  # electron-builder otherwise SKIPS signing entirely, leaving a broken
+  # signature chain that Gatekeeper reports as "damaged / cannot be opened".
+  # Ad-hoc signing makes the app run locally; real distribution still needs a
+  # Developer ID certificate + notarization (see README).
+  identity: "-"
+  target:
+    - target: dmg
+      arch:
+        - arm64
+    - target: zip
+      arch:
+        - arm64
+  artifactName: "${productName}-${version}-${arch}.${ext}"
+
+dmg:
+  title: "${productName} ${version}"
+  artifactName: "${productName}-${version}-${arch}.${ext}"
+  # Installer window background with the "first-launch blocked" instructions.
+  background: dmg-background.png
+  iconSize: 96
+  window:
+    width: 660
+    height: 400
+  contents:
+    # x/y are the CENTER of each icon.
+    - x: 215
+      y: 175
+    - x: 445
+      y: 175
+      type: link
+      path: /Applications
+
+# Optional: set to true once you have a Developer ID certificate.
+# notarize: false
